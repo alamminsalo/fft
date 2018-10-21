@@ -6,3 +6,4 @@ authors = ["alamminsalo <antti.lamminsalo@protonmail.com>"]
 [dependencies]
 num-complex = "0.2.1"
 plotlib = "0.3.0"
+argparse = "0.2.2"

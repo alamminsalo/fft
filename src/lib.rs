@@ -49,7 +49,7 @@ pub fn analyze(data: &Vec<(f64,f64)>, min: f64, max: f64, ss: f64) -> Vec<(f64,f
     // calculate data points
     let mut ft_data = vec![];
     let mut f = min;
-    while f < max {
+    while f <= max {
         // calculate revolutions around unit circle
         let processed = wind_unitcircle(data,f);
         // calculate mean X value

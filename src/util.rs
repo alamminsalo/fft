@@ -10,9 +10,7 @@ use plotlib::page::Page;
 // f - frequency to generate
 // t - time in seconds
 // ss - stepsize in seconds
-pub fn generate_sinewave(f: f64, t: f64, sf: f64) -> Vec<(f64,f64)> {
-    println!("sine: {} hz", f);
-
+fn sinewave(f: f64, t: f64, sf: f64) -> Vec<(f64,f64)> {
     // precalculate 2πf
     let fc = 2.0 * PI * f;
 
@@ -28,6 +26,28 @@ pub fn generate_sinewave(f: f64, t: f64, sf: f64) -> Vec<(f64,f64)> {
 
     data
 }
+
+pub fn generate_sinewaves(t: f64, sf: f64, frequencies: &[f64]) -> Vec<(f64,f64)> {
+    // mix and generate samples
+    frequencies.into_iter()
+        .fold(vec![],|acc,f| {
+            println!("add {} hz", f);
+            if acc.len() > 0 {
+                acc.into_iter()
+                    .zip(sinewave(*f,t,sf).into_iter())
+                    .map(|(t0,t1)|{
+                        let x = t0.0;
+                        let y = t0.1 + t1.1;
+                        (x,y)
+                    })
+                    .collect()
+            }
+            else {
+                sinewave(*f,t,sf)
+            }
+        })
+}
+
 
 // draws linear time plot
 pub fn drawplot(data: &Vec<(f64,f64)>) {

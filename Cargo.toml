@@ -1,0 +1,8 @@
+[package]
+name = "fft"
+version = "0.1.0"
+authors = ["alamminsalo <antti.lamminsalo@protonmail.com>"]
+
+[dependencies]
+num-complex = "0.2.1"
+plotlib = "0.3.0"

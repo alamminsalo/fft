@@ -1,3 +1,5 @@
+// cli interface for lib
+
 extern crate fft;
 extern crate argparse;
 extern crate plotlib;
@@ -6,21 +8,6 @@ mod util;
 mod plot;
 
 use argparse::{ArgumentParser, Store, StoreTrue, StoreOption, List};
-
-fn parse_freq_phase_pairs(fplist: Vec<String>) -> Vec<(f64,f64)> {
-    fplist
-    .into_iter()
-    .map(|sfp| {
-        let components: Vec<&str> = sfp.split(':').collect();
-        let freq = components[0].parse::<f64>().expect("failed to parse freq");
-        let mut phase = 0.0;
-        if components.len() > 1 {
-            phase = components[1].parse::<f64>().expect("failed to parse phase");
-        }
-        (freq, phase)
-    })
-    .collect()
-}
 
 fn main() {
     // sine sample generation args
@@ -81,7 +68,7 @@ fn main() {
 
     let mut sample: (Vec<f64>,f64) = (vec![], gen_sf);
     if sample.0.len() == 0 && gen_frequencies.len() > 0 {
-        sample.0 = util::generate_sinewaves(gen_t,gen_sf, &parse_freq_phase_pairs(gen_frequencies));
+        sample.0 = util::generate_sinewaves(gen_t,gen_sf, &util::parse_freq_phase_pairs(gen_frequencies));
 
         if plot_sample {
             plot::drawplot(&sample.0.iter().enumerate().map(|(idx,&x)|{

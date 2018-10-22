@@ -48,3 +48,19 @@ pub fn generate_sinewaves(t: f64, sf: f64, frequencies: &[(f64,f64)]) -> Vec<f64
         })
 }
 
+// parses list of "freq:phase" strings to vector of (f64,f64)
+pub fn parse_freq_phase_pairs(fplist: Vec<String>) -> Vec<(f64,f64)> {
+    fplist
+    .into_iter()
+    .map(|sfp| {
+        let components: Vec<&str> = sfp.split(':').collect();
+        let freq = components[0].parse::<f64>().expect("failed to parse freq");
+        let mut phase = 0.0;
+        if components.len() > 1 {
+            phase = components[1].parse::<f64>().expect("failed to parse phase");
+        }
+        (freq, phase)
+    })
+    .collect()
+}
+

@@ -3,6 +3,8 @@
 extern crate fft;
 extern crate argparse;
 extern crate plotlib;
+extern crate tui;
+extern crate termion;
 
 mod util;
 mod plot;
@@ -84,15 +86,21 @@ fn main() {
         // run analysis
         let mut ft_data: Vec<(f64,f64)> = vec![];
         let mut f = ft_min;
+        let mut term = plot::get_tui();
+        term.hide_cursor().unwrap();
+        term.clear().unwrap();
         while f <= ft_max {
             if plot_circle {
-                plot::drawcircle(&fft::graph_circle(&sample.0[..],gen_sf,f));
+                plot::draw_circle_graph(&mut term, &fft::graph_circle(&sample.0[..],gen_sf,f));
             }
             ft_data.push((f, fft::analyze_freq((&sample.0[..], gen_sf),f)));
+            plot::draw_plot(&mut term, &ft_data, ft_min, ft_max);
+            term.draw().unwrap();
             f += ft_ss;
         }
+        term.show_cursor().unwrap();
+        term.clear().unwrap();
 
-        // finally, draw FT plot
-        plot::drawplot(&ft_data);
+        // all done
     }
 }

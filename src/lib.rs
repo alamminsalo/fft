@@ -32,22 +32,24 @@ fn wind_unitcircle(data: &[f64], sf: f64, f: f64) -> Vec<(f64,f64)> {
     .collect()
 }
 
-// calculates mean average from array of f64
-fn calc_mean(data: Vec<f64>) -> f64 {
+// calculates mean average vector length from array of (f64,64)
+fn calc_mean(data: Vec<(f64,f64)>) -> f64 {
+    let mut mx = 0.0;
+    let mut my = 0.0;
     data.into_iter()
         .enumerate()
-        .fold(0.0, |mean, (idx, x)| {
-            if idx == 0 {
-                x
-            }
-            else {
-                ((mean * (idx as f64)) + x) / (idx as f64 + 1.0)
-            }
-        })
+        .for_each(|(idx, xy)| {
+            let i = idx as f64;
+            mx = ((mx * i) + xy.0) / (i + 1.0);
+            my = ((my * i) + xy.1) / (i + 1.0);
+        });
+
+    // return vector length from origo
+    (mx.powf(2.0) + my.powf(2.0)).sqrt()
 }
 
 // Returns sampled FT analysis vector
-pub fn analyze(data: (&[f64], f64), min: f64, max: f64, ss: f64, plot_winding: bool) -> Vec<(f64,f64)> {
+pub fn analyze(data: (&[f64], f64), min: f64, max: f64, ss: f64, plot_circle: bool) -> Vec<(f64,f64)> {
     println!("FT analysis: {} => {}, step {} hz", min, max, ss);
 
     // calculate data points
@@ -56,12 +58,12 @@ pub fn analyze(data: (&[f64], f64), min: f64, max: f64, ss: f64, plot_winding: b
     while f <= max {
         // calculate revolutions around unit circle
         let processed = wind_unitcircle(data.0, data.1, f);
-        if plot_winding {
+        if plot_circle {
             println!("Circle: {} hz", f);
             util::drawunitcircle(&processed);
         }
         // calculate mean from y-axis values
-        let mx = calc_mean(processed.into_iter().map(|(x,_)| x).collect());
+        let mx = calc_mean(processed);
         ft_data.push((f, mx));
 
         f += ss;

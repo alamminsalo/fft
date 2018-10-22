@@ -4,14 +4,30 @@ extern crate argparse;
 use fft::util;
 use argparse::{ArgumentParser, Store, StoreTrue, StoreOption, List};
 
+fn parseFreqPhasePairs(fplist: Vec<String>) -> Vec<(f64,f64)> {
+    fplist
+    .into_iter()
+    .map(|sfp| {
+        let mut freq = 0.0;
+        let mut phase = 0.0;
+        let components: Vec<&str> = sfp.split(':').collect();
+        freq = components[0].parse::<f64>().expect("failed to parse freq");
+        if components.len() > 1 {
+            phase = components[1].parse::<f64>().expect("failed to parse phase");
+        }
+        (freq, phase)
+    })
+    .collect()
+}
+
 fn main() {
     // sine sample generation args
     let mut gen_t = 2.0; // time secs
     let mut gen_sf = 44_100.0; // sampling frequency
-    let mut gen_frequencies: Vec<f64> = vec![]; // frequencies to generate
+    let mut gen_frequencies: Vec<String> = vec![]; // frequencies to generate
 
     let mut plot_sample = false;
-    let mut plot_winding = false;
+    let mut plot_circle = false;
 
     // ft analysis args
     let mut ft_min = 1.0;  // lower bound, hz
@@ -36,8 +52,8 @@ fn main() {
         ap.refer(&mut plot_sample)
             .add_option(&["--plot-sample"], StoreTrue,
             "draws given sample as a chart");
-        ap.refer(&mut plot_winding)
-            .add_option(&["--plot-winding"], StoreTrue,
+        ap.refer(&mut plot_circle)
+            .add_option(&["--plot-circle"], StoreTrue,
             "draws winding graphs");
         // ft args
         ap.refer(&mut ft_min)
@@ -63,7 +79,7 @@ fn main() {
 
     let mut sample: (Vec<f64>,f64) = (vec![], gen_sf);
     if sample.0.len() == 0 && gen_frequencies.len() > 0 {
-        sample.0 = util::generate_sinewaves(gen_t,gen_sf,&gen_frequencies);
+        sample.0 = util::generate_sinewaves(gen_t,gen_sf, &parseFreqPhasePairs(gen_frequencies));
 
         if plot_sample {
             util::drawplot(&sample.0.iter().enumerate().map(|(idx,&x)|{
@@ -77,7 +93,7 @@ fn main() {
 
     if sample.0.len() > 0 {
         // run analysis
-        let ft_data = fft::analyze((&sample.0[..],gen_sf), ft_min, ft_max, ft_ss, plot_winding);
+        let ft_data = fft::analyze((&sample.0[..],gen_sf), ft_min, ft_max, ft_ss, plot_circle);
 
         // finally, draw FT plot
         util::drawplot(&ft_data);

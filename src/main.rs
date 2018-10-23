@@ -17,9 +17,6 @@ fn main() {
     let mut gen_sf = 44_100.0; // sampling frequency
     let mut gen_frequencies: Vec<String> = vec![]; // frequencies to generate
 
-    let mut plot_sample = false;
-    let mut plot_circle = false;
-
     // ft analysis args
     let mut ft_min = 1.0;  // lower bound, hz
     let mut ft_max = 100.0;  // upper bound, hz
@@ -40,12 +37,6 @@ fn main() {
         ap.refer(&mut gen_frequencies)
             .add_option(&["--freqs"], List,
             "sine frequencies generated as list of hz");
-        ap.refer(&mut plot_sample)
-            .add_option(&["--plot-sample"], StoreTrue,
-            "draws given sample as a chart");
-        ap.refer(&mut plot_circle)
-            .add_option(&["--plot-circle"], StoreTrue,
-            "draws winding graphs");
         // ft args
         ap.refer(&mut ft_min)
             .add_option(&["--min"], Store,
@@ -72,11 +63,9 @@ fn main() {
     if sample.0.len() == 0 && gen_frequencies.len() > 0 {
         sample.0 = util::generate_sinewaves(gen_t,gen_sf, &util::parse_freq_phase_pairs(gen_frequencies));
 
-        if plot_sample {
-            plot::drawplot(&sample.0.iter().enumerate().map(|(idx,&x)|{
-                (idx as f64 / sample.1, x)
-            }).collect());
-        }
+        plot::drawplot(&sample.0.iter().enumerate().map(|(idx,&x)|{
+            (idx as f64 / sample.1, x)
+        }).collect());
 
         sample.1 = gen_sf;
         println!("Generated sinewaves: sampling time of {} seconds, sampling frequency {} hz", gen_t, gen_sf);
@@ -89,12 +78,14 @@ fn main() {
         let mut term = plot::get_tui();
         term.hide_cursor().unwrap();
         term.clear().unwrap();
+        let waveform: Vec<(f64,f64)> = sample.0.iter().enumerate().map(|(idx,&x)|{
+                (idx as f64 / sample.1, x)
+            }).collect();
         while f <= ft_max {
-            if plot_circle {
-                plot::draw_circle_graph(&mut term, &fft::graph_circle(&sample.0[..],gen_sf,f));
-            }
+            plot::draw_plot_1(&mut term, &waveform[..],0.0,gen_t);
+            plot::draw_circle_graph(&mut term, &fft::graph_circle(&sample.0[..],gen_sf,f));
             ft_data.push((f, fft::analyze_freq((&sample.0[..], gen_sf),f)));
-            plot::draw_plot(&mut term, &ft_data, ft_min, ft_max);
+            plot::draw_plot_2(&mut term, &ft_data, ft_min, ft_max);
             term.draw().unwrap();
             f += ft_ss;
         }

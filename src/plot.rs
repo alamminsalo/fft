@@ -75,7 +75,40 @@ pub fn draw_circle_graph(mut term: &mut Terminal<TermionBackend<Stdout>>, data: 
         .render(&mut term, &Rect::new(0,0,w,h));
 }
 
-pub fn draw_plot(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64,f64)], min: f64, max: f64) {
+pub fn draw_plot_1(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64,f64)], min: f64, max: f64) {
+    // plot scale from min/max values
+    let r = data.iter().fold(0.0, |acc: f64,xy|{
+        acc.max(xy.1)
+    }).ceil();
+
+    let size = &term.size().unwrap();
+    let x = (size.width / 4) + 3;
+    let y = 0;
+    let h = size.height / 2;
+    let w = size.width - x;
+
+    Chart::<&str,&str>::default()
+        .block(Block::default()
+               .title("Waveform")
+               .borders(Borders::ALL))
+        .x_axis(Axis::default()
+                .bounds([min.floor(),max.ceil()])
+                .labels(&[&min.to_string(), 
+                        &(min + (max - min) / 4.0).to_string(),
+                        &(min + (max - min) / 2.0).to_string(),
+                        &(min + (max - min) / 1.3333333333333333333).to_string(),
+                        &max.to_string()])
+                )
+        .y_axis(Axis::default()
+                .bounds([-r,r]))
+        .datasets(&[Dataset::default()
+                  .marker(Marker::Braille)
+                  .style(Style::default().fg(Color::White))
+                  .data(data)])
+        .render(&mut term, &Rect::new(x,y,w,h));
+}
+
+pub fn draw_plot_2(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64,f64)], min: f64, max: f64) {
     // plot scale from min/max values
     let r = data.iter().fold(0.0, |acc: f64,xy|{
         acc.max(xy.1)

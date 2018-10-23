@@ -9,7 +9,9 @@ extern crate termion;
 mod util;
 mod plot;
 
-use argparse::{ArgumentParser, Store, StoreTrue, StoreOption, List};
+use termion::input::TermRead;
+use std::io::stdin;
+use argparse::{ArgumentParser, Store, StoreOption, List};
 
 fn main() {
     // sine sample generation args
@@ -81,17 +83,27 @@ fn main() {
         let waveform: Vec<(f64,f64)> = sample.0.iter().enumerate().map(|(idx,&x)|{
                 (idx as f64 / sample.1, x)
             }).collect();
+
+        // process graphs
         while f <= ft_max {
             plot::draw_plot_1(&mut term, &waveform[..],0.0,gen_t);
             plot::draw_circle_graph(&mut term, &fft::graph_circle(&sample.0[..],gen_sf,f));
             ft_data.push((f, fft::analyze_freq((&sample.0[..], gen_sf),f)));
             plot::draw_plot_2(&mut term, &ft_data, ft_min, ft_max);
             term.draw().unwrap();
+
             f += ft_ss;
         }
+
+        // key events
+        for c in stdin().keys() {
+            match c.unwrap() {
+                _ => break
+            }
+        }
+
+        // clean up
         term.show_cursor().unwrap();
         term.clear().unwrap();
-
-        // all done
     }
 }

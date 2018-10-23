@@ -82,7 +82,7 @@ pub fn draw_plot_1(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64
     }).ceil();
 
     let size = &term.size().unwrap();
-    let x = (size.width / 4) + 3;
+    let x = size.height;
     let y = 0;
     let h = size.height / 2;
     let w = size.width - x;

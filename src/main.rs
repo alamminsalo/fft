@@ -61,20 +61,19 @@ fn main() {
         ft_ss = (ft_max - ft_min) / ft_res.unwrap();
     }
 
+    // create sample
     let mut sample: (Vec<f64>,f64) = (vec![], gen_sf);
     if sample.0.len() == 0 && gen_frequencies.len() > 0 {
         sample.0 = util::generate_sinewaves(gen_t,gen_sf, &util::parse_freq_phase_pairs(gen_frequencies));
-
-        plot::drawplot(&sample.0.iter().enumerate().map(|(idx,&x)|{
-            (idx as f64 / sample.1, x)
-        }).collect());
-
         sample.1 = gen_sf;
-        println!("Generated sinewaves: sampling time of {} seconds, sampling frequency {} hz", gen_t, gen_sf);
+    }
+    else {
+        // get sample from input
     }
 
+    // run analysis
+    // plots realtime text graph
     if sample.0.len() > 0 {
-        // run analysis
         let mut ft_data: Vec<(f64,f64)> = vec![];
         let mut f = ft_min;
         let mut term = plot::get_tui();
@@ -84,12 +83,21 @@ fn main() {
                 (idx as f64 / sample.1, x)
             }).collect();
 
+        let mut peaks: Vec<(f64,f64)> = vec![];
+
         // process graphs
         while f <= ft_max {
             plot::draw_plot_1(&mut term, &waveform[..],0.0,gen_t);
             plot::draw_circle_graph(&mut term, &fft::graph_circle(&sample.0[..],gen_sf,f));
             ft_data.push((f, fft::analyze_freq((&sample.0[..], gen_sf),f)));
+            if ft_data.len() > 5 {
+                let peak = fft::max(&ft_data[(ft_data.len() - 5)..]);
+                if peak > 1 && peak < 3 {
+                    peaks.push(ft_data[ft_data.len() - 5 + peak]);
+                }
+            }
             plot::draw_plot_2(&mut term, &ft_data, ft_min, ft_max);
+            plot::draw_plot_2_peaks(&mut term, &peaks, ft_min, ft_max);
             term.draw().unwrap();
 
             f += ft_ss;

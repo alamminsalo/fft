@@ -44,7 +44,7 @@ fn calc_mean(data: Vec<(f64,f64)>) -> f64 {
 }
 
 // Returns sampled FT analysis vector
-pub fn analyze(data: (&[f64], f64), min: f64, max: f64, ss: f64, plot_circle: bool) -> Vec<(f64,f64)> {
+pub fn analyze(data: (&[f64], f64), min: f64, max: f64, ss: f64) -> Vec<(f64,f64)> {
     println!("FT analysis: {} => {}, step {} hz", min, max, ss);
 
     // calculate data points
@@ -70,6 +70,15 @@ pub fn analyze_freq(data: (&[f64], f64), f: f64) -> f64 {
     calc_mean(processed)
 }
 
-
-
+// finds a local max inside
+pub fn max(data: &[(f64,f64)]) -> usize {
+    data.iter().enumerate().fold((0,0.0),|acc,(idx,&x)| {
+        if acc.1 > x.1 {
+            acc
+        }
+        else {
+            (idx,x.1)
+        }
+    }).0
+}
 

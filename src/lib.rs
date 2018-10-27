@@ -2,7 +2,6 @@
 // (actually DSFT - damn slow fourier transform right now)
 extern crate num_complex;
 
-mod sample;
 pub mod util;
 
 use std::f64::consts::PI;

@@ -8,7 +8,6 @@ extern crate termion;
 extern crate num_complex;
 
 mod plot;
-mod generator;
 
 use termion::input::TermRead;
 use std::io::stdin;

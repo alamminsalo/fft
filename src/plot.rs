@@ -31,11 +31,11 @@ fn complex_to_plot(data: &[Complex<f64>]) -> Vec<(f64,f64)> {
 }
 
 pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f64>]) {
+    let data = complex_to_plot(data);
     // plot scale from min/max values
-    let r = 1.0;
-    // let r = data.iter().fold(0.0, |acc: f64,xy|{
-    //     acc.max(xy.0).max(xy.1)
-    // }).ceil();
+    let r = data.iter().fold(0.0, |acc: f64,xy|{
+        acc.max(xy.0).max(xy.1)
+    }).ceil();
 
     let size = &term.size().unwrap();
     let h = size.height / 2;
@@ -52,7 +52,7 @@ pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f64>]) {
         .datasets(&[Dataset::default()
                   .marker(Marker::Braille)
                   .style(Style::default().fg(Color::White))
-                  .data(&complex_to_plot(data))])
+                  .data(&data)])
         .render(&mut term, &Rect::new(0,0,w,h));
 }
 

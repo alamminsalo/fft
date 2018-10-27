@@ -5,6 +5,7 @@ extern crate argparse;
 extern crate plotlib;
 extern crate tui;
 extern crate termion;
+extern crate num_complex;
 
 mod util;
 mod plot;
@@ -16,7 +17,7 @@ use argparse::{ArgumentParser, Store, StoreOption, List};
 fn main() {
     // sine sample generation args
     let mut gen_t = 2.0; // time secs
-    let mut gen_sf = 44_100.0; // sampling frequency
+    let mut gen_sf: usize = 44_100; // sampling frequency
     let mut gen_frequencies: Vec<String> = vec![]; // frequencies to generate
 
     // ft analysis args
@@ -62,10 +63,9 @@ fn main() {
     }
 
     // create sample
-    let mut sample: (Vec<f64>,f64) = (vec![], gen_sf);
-    if sample.0.len() == 0 && gen_frequencies.len() > 0 {
-        sample.0 = util::generate_sinewaves(gen_t,gen_sf, &util::parse_freq_phase_pairs(gen_frequencies));
-        sample.1 = gen_sf;
+    let mut sample = fft::Sample{ data: vec![], rate: gen_sf };
+    if gen_frequencies.len() > 0 {
+        sample = util::generate_sinewaves(gen_t, sample.rate, &util::parse_freq_phase_pairs(gen_frequencies));
     }
     else {
         // get sample from input
@@ -73,31 +73,36 @@ fn main() {
 
     // run analysis
     // plots realtime text graph
-    if sample.0.len() > 0 {
-        let mut ft_data: Vec<(f64,f64)> = vec![];
+    if !sample.is_empty() {
+        let mut ft_data: Vec<fft::Phasor> = vec![];
         let mut f = ft_min;
         let mut term = plot::get_tui();
         term.hide_cursor().unwrap();
         term.clear().unwrap();
-        let waveform: Vec<(f64,f64)> = sample.0.iter().enumerate().map(|(idx,&x)|{
-                (idx as f64 / sample.1, x)
-            }).collect();
-
-        let mut peaks: Vec<(f64,f64)> = vec![];
+        let mut peaks: Vec<usize> = vec![];
 
         // process graphs
         while f <= ft_max {
-            plot::draw_plot_1(&mut term, &waveform[..],0.0,gen_t);
-            plot::draw_circle_graph(&mut term, &fft::graph_circle(&sample.0[..],gen_sf,f));
-            ft_data.push((f, fft::analyze_freq((&sample.0[..], gen_sf),f)));
-            if ft_data.len() > 5 {
-                let peak = fft::max(&ft_data[(ft_data.len() - 5)..]);
-                if peak > 1 && peak < 3 {
-                    peaks.push(ft_data[ft_data.len() - 5 + peak]);
+            plot::draw_waveform(&mut term, &sample, 0.0, gen_t);
+            plot::draw_circle(&mut term, &fft::graph_circle(&sample,f));
+            ft_data.push(fft::Phasor{ 
+                frequency: f, 
+                complex: fft::analyze_freq(&sample,f)
+            });
+            if ft_data.len() > 3 {
+                let peak = fft::max(&ft_data[(ft_data.len() - 3)..]);
+                if peak == 1 {
+                    // peak local -> global
+                    let peak = ft_data.len() - 3 + peak;
+                    if !peaks.contains(&peak) {
+                        peaks.push(peak);
+                    }
                 }
             }
-            plot::draw_plot_2(&mut term, &ft_data, ft_min, ft_max);
-            plot::draw_plot_2_peaks(&mut term, &peaks, ft_min, ft_max);
+            plot::draw_frequency_graph(&mut term, &ft_data[..], ft_min, ft_max);
+            plot::draw_peaks(&mut term,
+                             ft_data.iter().enumerate().filter(|(i,_)| peaks.contains(i)).map(|(_,p)| p).collect(),
+                             ft_min, ft_max);
             term.draw().unwrap();
 
             f += ft_ss;

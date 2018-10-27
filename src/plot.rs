@@ -5,13 +5,30 @@ use tui::widgets::{Widget, Chart, Axis, Marker, Dataset, Block, Borders};
 use tui::style::{Style, Color};
 use tui::layout::Rect;
 use std::io::{Stdout, stdout};
+use num_complex::Complex;
+use fft;
+
+type DTerm = Terminal<TermionBackend<Stdout>>;
 
 // initializes and returns tui terminal
-pub fn get_tui() -> Terminal<TermionBackend<Stdout>> {
+pub fn get_tui() -> DTerm {
     Terminal::new(TermionBackend::with_stdout(stdout())).unwrap()
 }
 
-pub fn draw_circle_graph(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64,f64)]) {
+// returns phasor freq, vector length
+fn phasor_to_freqs(data: &[fft::Phasor]) -> Vec<(f64,f64)> {
+    data.iter().map(|p| (p.frequency, p.complex.norm_sqr())).collect()
+}
+
+fn phasor_ref_to_freqs(data: &[&fft::Phasor]) -> Vec<(f64,f64)> {
+    data.iter().map(|&p| (p.frequency, p.complex.norm_sqr())).collect()
+}
+
+fn complex_to_cartesian_tuples(data: &[Complex<f64>]) -> Vec<(f64,f64)> {
+    data.iter().map(|&c| (c.re, c.im)).collect()
+}
+
+pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f64>]) {
     // plot scale from min/max values
     let r = 2.0;
     // let r = data.iter().fold(0.0, |acc: f64,xy|{
@@ -33,15 +50,13 @@ pub fn draw_circle_graph(mut term: &mut Terminal<TermionBackend<Stdout>>, data: 
         .datasets(&[Dataset::default()
                   .marker(Marker::Braille)
                   .style(Style::default().fg(Color::White))
-                  .data(data)])
+                  .data(&complex_to_cartesian_tuples(data))])
         .render(&mut term, &Rect::new(0,0,w,h));
 }
 
-pub fn draw_plot_1(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64,f64)], min: f64, max: f64) {
+pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, min: f64, max: f64) {
     // plot scale from min/max values
-    let r = data.iter().fold(0.0, |acc: f64,xy|{
-        acc.max(xy.1)
-    }).ceil();
+    let r = sample.max_amplitude().ceil();
 
     let size = &term.size().unwrap();
     let x = size.height;
@@ -66,11 +81,11 @@ pub fn draw_plot_1(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64
         .datasets(&[Dataset::default()
                   .marker(Marker::Braille)
                   .style(Style::default().fg(Color::White))
-                  .data(data)])
+                  .data(&sample.with_time())])
         .render(&mut term, &Rect::new(x,y,w,h));
 }
 
-pub fn draw_plot_2(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64,f64)], min: f64, max: f64) {
+pub fn draw_frequency_graph(mut term: &mut DTerm, data: &[fft::Phasor], min: f64, max: f64) {
     // plot scale from min/max values
     let r = 1.0;
     // let r = data.iter().fold(0.0, |acc: f64,xy|{
@@ -99,11 +114,11 @@ pub fn draw_plot_2(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64
         .datasets(&[Dataset::default()
                   .marker(Marker::Braille)
                   .style(Style::default().fg(Color::White))
-                  .data(data)])
+                  .data(&phasor_to_freqs(data))])
         .render(&mut term, &Rect::new(0,y,w,h));
 }
 
-pub fn draw_plot_2_peaks(mut term: &mut Terminal<TermionBackend<Stdout>>, data: &[(f64,f64)], min: f64, max: f64) {
+pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f64, max: f64) {
     // plot scale from min/max values
     let r = 1.0;
     let size = &term.size().unwrap();
@@ -119,6 +134,6 @@ pub fn draw_plot_2_peaks(mut term: &mut Terminal<TermionBackend<Stdout>>, data: 
         .datasets(&[Dataset::default()
                   .marker(Marker::Dot)
                   .style(Style::default().fg(Color::Red))
-                  .data(data)])
+                  .data(&phasor_ref_to_freqs(&data[..]))])
         .render(&mut term, &Rect::new(0,y,w,h));
 }

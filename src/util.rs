@@ -1,15 +1,14 @@
 // utility module
 
 use std::f64::consts::PI;
-
-use fft;
+use super::Sample;
 
 // generates sinewave
 // arguments:
 // f - frequency to generate
 // t - time in seconds
 // ss - stepsize in seconds
-fn sinewave(f: f64, p: f64, t: f64, sr: usize) -> fft::Sample {
+pub fn sinewave(f: f64, p: f64, t: f64, sr: usize) -> Sample {
     // precalculate 2πf
     let fc = 2.0 * PI * f;
 
@@ -27,13 +26,13 @@ fn sinewave(f: f64, p: f64, t: f64, sr: usize) -> fft::Sample {
         t0 += dt;
     }
 
-    fft::Sample{ data: data, rate: sr }
+    Sample{ data: data, rate: sr }
 }
 
 // generates sinewaves from list of (freq,phase) pairs
-pub fn generate_sinewaves(t: f64, sr: usize, frequencies: &[(f64,f64)]) -> fft::Sample {
+pub fn generate_sinewaves(t: f64, sr: usize, frequencies: &[(f64,f64)]) -> Sample {
     // mix and generate samples
-    fft::Sample{
+    Sample{
         data: frequencies.into_iter()
         .fold(vec![],|acc,fp| {
             println!("{} hz, {} phase", fp.0, fp.1);
@@ -67,5 +66,31 @@ pub fn parse_freq_phase_pairs(fplist: Vec<String>) -> Vec<(f64,f64)> {
         (freq, phase)
     })
     .collect()
+}
+
+// adjusts peaks location + normalizes peaks
+pub fn adjust_peaks(phasors: &[super::Phasor], peaks: &[usize]) -> Vec<usize> {
+    let peaks_amp: Vec<(f64, usize)> = peaks.iter()
+        .map(|&p0| {
+            let p0_amp = phasors[p0].complex.to_polar().0;
+            let mut p1 = p0 + 1;
+            while phasors.len() > p1 && phasors[p1].complex.to_polar().0 == p0_amp {
+                p1 += 1;
+            }
+            // return floor(center)
+            (p0_amp, p0 + (p1 as f64 - p0 as f64).floor() as usize)
+        })
+    .collect();
+
+    // get max amplitude
+    let p_max: f64 = peaks_amp.iter().fold(0.0, |acc, p| acc.max(p.0));
+
+    let mut peaks_normalized: Vec<usize> = peaks_amp.iter()
+        .filter(|&p|{ p.0 > p_max * 0.3333333 })
+        .map(|&p| p.1)
+        .collect();
+    peaks_normalized.dedup();
+
+    peaks_normalized
 }
 

@@ -4,8 +4,10 @@ use tui::backend::TermionBackend;
 use tui::widgets::{Widget, Chart, Axis, Marker, Dataset, Block, Borders};
 use tui::style::{Style, Color};
 use tui::layout::Rect;
+use tui::buffer::Buffer;
 use std::io::{Stdout, stdout};
 use num_complex::Complex;
+use std::f64::consts::PI;
 use fft;
 
 type DTerm = Terminal<TermionBackend<Stdout>>;
@@ -16,21 +18,21 @@ pub fn get_tui() -> DTerm {
 }
 
 // returns phasor freq, vector length
-fn phasor_to_freqs(data: &[fft::Phasor]) -> Vec<(f64,f64)> {
-    data.iter().map(|p| (p.frequency, p.complex.norm_sqr())).collect()
+fn phasor_to_plot(data: &[fft::Phasor]) -> Vec<(f64,f64)> {
+    data.iter().map(|p| (p.frequency, p.complex.to_polar().0)).collect()
 }
 
-fn phasor_ref_to_freqs(data: &[&fft::Phasor]) -> Vec<(f64,f64)> {
-    data.iter().map(|&p| (p.frequency, p.complex.norm_sqr())).collect()
+fn phasor_ref_to_plot(data: &[&fft::Phasor]) -> Vec<(f64,f64)> {
+    data.iter().map(|&p| (p.frequency, p.complex.to_polar().0)).collect()
 }
 
-fn complex_to_cartesian_tuples(data: &[Complex<f64>]) -> Vec<(f64,f64)> {
+fn complex_to_plot(data: &[Complex<f64>]) -> Vec<(f64,f64)> {
     data.iter().map(|&c| (c.re, c.im)).collect()
 }
 
 pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f64>]) {
     // plot scale from min/max values
-    let r = 2.0;
+    let r = 1.0;
     // let r = data.iter().fold(0.0, |acc: f64,xy|{
     //     acc.max(xy.0).max(xy.1)
     // }).ceil();
@@ -50,7 +52,7 @@ pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f64>]) {
         .datasets(&[Dataset::default()
                   .marker(Marker::Braille)
                   .style(Style::default().fg(Color::White))
-                  .data(&complex_to_cartesian_tuples(data))])
+                  .data(&complex_to_plot(data))])
         .render(&mut term, &Rect::new(0,0,w,h));
 }
 
@@ -114,8 +116,32 @@ pub fn draw_frequency_graph(mut term: &mut DTerm, data: &[fft::Phasor], min: f64
         .datasets(&[Dataset::default()
                   .marker(Marker::Braille)
                   .style(Style::default().fg(Color::White))
-                  .data(&phasor_to_freqs(data))])
+                  .data(&phasor_to_plot(data))])
         .render(&mut term, &Rect::new(0,y,w,h));
+}
+
+
+struct Label<'a> {
+    text: &'a str,
+}
+
+impl<'a> Default for Label<'a> {
+    fn default() -> Label<'a> {
+        Label { text: "" }
+    }
+}
+
+impl<'a> Widget for Label<'a> {
+    fn draw(&mut self, area: &Rect, buf: &mut Buffer) {
+        buf.set_string(area.left(), area.top(), self.text, &Style::default());
+    }
+}
+
+impl<'a> Label<'a> {
+    fn text(&mut self, text: &'a str) -> &mut Label<'a> {
+        self.text = text;
+        self
+    }
 }
 
 pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f64, max: f64) {
@@ -134,6 +160,18 @@ pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f64, max: 
         .datasets(&[Dataset::default()
                   .marker(Marker::Dot)
                   .style(Style::default().fg(Color::Red))
-                  .data(&phasor_ref_to_freqs(&data[..]))])
+                  .data(&phasor_ref_to_plot(&data[..]))])
         .render(&mut term, &Rect::new(0,y,w,h));
+
+    // draw labels
+    let l = max - min;
+    data.iter().for_each(|&p|{
+        let x = (w as f64 * (p.frequency - min) / l.max(0.1)) as u16;
+        let (r,theta) = p.complex.to_polar();
+        let degrees = theta * 180.0 / PI;
+        Label::default()
+            .text(&format!("{:.2}:{:.2}", p.frequency, degrees))
+            .render(&mut term, 
+                    &Rect::new(x,y + (h / 2) - (r * (h / 2) as f64) as u16,0,0));
+    });
 }

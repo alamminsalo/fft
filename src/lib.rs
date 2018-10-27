@@ -2,6 +2,9 @@
 // (actually DSFT - damn slow fourier transform right now)
 extern crate num_complex;
 
+mod sample;
+pub mod util;
+
 use std::f64::consts::PI;
 use num_complex::Complex;
 
@@ -44,30 +47,30 @@ impl Sample {
 // Argument f is for winding frequency
 // sf : sampling frequency (eg. 44100hz)
 pub fn graph_circle(sample: &Sample, f: f64) -> Vec<Complex<f64>> {
-    // precalculate -2πf
+    // precalculate 2πf
     let fc = 2.0 * PI * f;
     // cycles per second
     let sc = 1.0 / sample.rate as f64;
     // winding machine
     sample.data.iter()
         .enumerate()
-        .map(|(idx,a)| {
-            let t = sc * idx as f64;
-            (I * fc * t).exp() * a
+        .map(|(i,a)| {
+            let t = sc * i as f64;
+            let c = (I * fc * t).exp() * a;
+            // TODO: why does this have to be negated
+            Complex{re: c.im, im: c.re}
         })
     .collect()
 }
 
 // calculates mean average vector length from array of (f64,64)
 fn calc_mean(data: Vec<Complex<f64>>) -> Complex<f64> {
-    let mut mx = Complex{ re: 0.0, im: 0.0 };
     data.into_iter()
         .enumerate()
-        .for_each(|(idx, c)| {
-            let i = idx as f64;
-            mx = ((mx * i) + c) / (i + 1.0);
-        });
-    mx
+        .fold(Complex{re:0.0,im:0.0},
+           |acc, (i, c)| {
+            ((acc * i as f64) + c) / (i + 1) as f64
+        })
 }
 
 // Returns sampled FT analysis vector
@@ -101,7 +104,7 @@ pub fn max(data: &[Phasor]) -> usize {
     data.iter()
         .enumerate()
         .fold((0,Complex{re: 0.0, im: 0.0}),|acc,(idx,p)| {
-        if acc.1.norm_sqr() > p.complex.norm_sqr() {
+        if acc.1.to_polar().0 > p.complex.to_polar().0 {
             acc
         }
         else {
@@ -110,3 +113,10 @@ pub fn max(data: &[Phasor]) -> usize {
     }).0
 }
 
+#[test]
+fn test_circle(){
+    let sine = util::sinewave(5.0, 0.0, 1.0, 1000);
+    let circle = graph_circle(&sine, 5.0);
+    let center = calc_mean(circle);
+    assert!(center.re > 0.5);
+}

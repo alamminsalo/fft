@@ -7,12 +7,13 @@ extern crate tui;
 extern crate termion;
 extern crate num_complex;
 
-mod util;
 mod plot;
+mod generator;
 
 use termion::input::TermRead;
 use std::io::stdin;
 use argparse::{ArgumentParser, Store, StoreOption, List};
+use fft::util;
 
 fn main() {
     // sine sample generation args
@@ -94,21 +95,25 @@ fn main() {
                 if peak == 1 {
                     // peak local -> global
                     let peak = ft_data.len() - 3 + peak;
-                    if !peaks.contains(&peak) {
-                        peaks.push(peak);
-                    }
+                    peaks.push(peak);
                 }
             }
             plot::draw_frequency_graph(&mut term, &ft_data[..], ft_min, ft_max);
-            plot::draw_peaks(&mut term,
-                             ft_data.iter().enumerate().filter(|(i,_)| peaks.contains(i)).map(|(_,p)| p).collect(),
-                             ft_min, ft_max);
-            term.draw().unwrap();
 
+            // increment f
             f += ft_ss;
+
+            if f > ft_max {
+                // show peaks
+                peaks = util::adjust_peaks(&ft_data, &peaks);
+                plot::draw_peaks(&mut term,
+                                 peaks.iter().map(|&p| &ft_data[p]).collect(),
+                                 ft_min, ft_max);
+            }
+            term.draw().unwrap();
         }
 
-        // key events
+        // stop for key events
         for c in stdin().keys() {
             match c.unwrap() {
                 _ => break

@@ -7,7 +7,7 @@ use tui::layout::Rect;
 use tui::buffer::Buffer;
 use std::io::{Stdout, stdout};
 use num_complex::Complex;
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use fft;
 
 type DTerm = Terminal<TermionBackend<Stdout>>;
@@ -19,18 +19,18 @@ pub fn get_tui() -> DTerm {
 
 // returns phasor freq, vector length
 fn phasor_to_plot(data: &[fft::Phasor]) -> Vec<(f64,f64)> {
-    data.iter().map(|p| (p.frequency, p.complex.to_polar().0)).collect()
+    data.iter().map(|p| (p.frequency as f64, p.complex.to_polar().0 as f64)).collect()
 }
 
 fn phasor_ref_to_plot(data: &[&fft::Phasor]) -> Vec<(f64,f64)> {
-    data.iter().map(|&p| (p.frequency, p.complex.to_polar().0)).collect()
+    data.iter().map(|&p| (p.frequency as f64, p.complex.to_polar().0 as f64)).collect()
 }
 
-fn complex_to_plot(data: &[Complex<f64>]) -> Vec<(f64,f64)> {
-    data.iter().map(|&c| (c.re, c.im)).collect()
+fn complex_to_plot(data: &[Complex<f32>]) -> Vec<(f64,f64)> {
+    data.iter().map(|&c| (c.re as f64, c.im as f64)).collect()
 }
 
-pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f64>]) {
+pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f32>]) {
     let data = complex_to_plot(data);
     // plot scale from min/max values
     let r = data.iter().fold(0.0, |acc: f64,xy|{
@@ -56,9 +56,9 @@ pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f64>]) {
         .render(&mut term, &Rect::new(0,0,w,h));
 }
 
-pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, min: f64, max: f64) {
+pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, min: f32, max: f32) {
     // plot scale from min/max values
-    let r = sample.max_amplitude().ceil();
+    let r = sample.max_amplitude().ceil() as f64;
 
     let size = &term.size().unwrap();
     let x = size.height;
@@ -71,7 +71,7 @@ pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, min: f64, max: 
                .title("Waveform")
                .borders(Borders::ALL))
         .x_axis(Axis::default()
-                .bounds([min.floor(),max.ceil()])
+                .bounds([min.floor() as f64,max.ceil() as f64])
                 .labels(&[&min.to_string(), 
                         &(min + (max - min) / 4.0).to_string(),
                         &(min + (max - min) / 2.0).to_string(),
@@ -87,10 +87,10 @@ pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, min: f64, max: 
         .render(&mut term, &Rect::new(x,y,w,h));
 }
 
-pub fn draw_frequency_graph(mut term: &mut DTerm, data: &[fft::Phasor], min: f64, max: f64) {
+pub fn draw_frequency_graph(mut term: &mut DTerm, data: &[fft::Phasor], min: f32, max: f32) {
     // plot scale from min/max values
     let r = 1.0;
-    // let r = data.iter().fold(0.0, |acc: f64,xy|{
+    // let r = data.iter().fold(0.0, |acc: f32,xy|{
     //     acc.max(xy.1)
     // }).ceil();
 
@@ -104,7 +104,7 @@ pub fn draw_frequency_graph(mut term: &mut DTerm, data: &[fft::Phasor], min: f64
                .title("FT analysis")
                .borders(Borders::ALL))
         .x_axis(Axis::default()
-                .bounds([min.floor(),max.ceil()])
+                .bounds([min.floor() as f64,max.ceil() as f64])
                 .labels(&[&min.to_string(), 
                         &(min + (max - min) / 4.0).to_string(),
                         &(min + (max - min) / 2.0).to_string(),
@@ -144,7 +144,7 @@ impl<'a> Label<'a> {
     }
 }
 
-pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f64, max: f64) {
+pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f32, max: f32) {
     // plot scale from min/max values
     let r = 1.0;
     let size = &term.size().unwrap();
@@ -154,7 +154,7 @@ pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f64, max: 
 
     Chart::<&str,&str>::default()
         .x_axis(Axis::default()
-                .bounds([min.floor(),max.ceil()]))
+                .bounds([min.floor() as f64,max.ceil() as f64]))
         .y_axis(Axis::default()
                 .bounds([-r,r]))
         .datasets(&[Dataset::default()
@@ -166,12 +166,12 @@ pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f64, max: 
     // draw labels
     let l = max - min;
     data.iter().for_each(|&p|{
-        let x = (w as f64 * (p.frequency - min) / l.max(0.1)) as u16;
+        let x = (w as f32 * (p.frequency - min) / l.max(0.1)) as u16;
         let (r,theta) = p.complex.to_polar();
         let degrees = theta * 180.0 / PI;
         Label::default()
             .text(&format!("{:.2}:{:.2}", p.frequency, degrees))
             .render(&mut term, 
-                    &Rect::new(x,y + (h / 2) - (r * (h / 2) as f64) as u16,0,0));
+                    &Rect::new(x,y + (h / 2) - (r * (h / 2) as f32) as u16,0,0));
     });
 }

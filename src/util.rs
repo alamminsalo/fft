@@ -1,6 +1,6 @@
 // utility module
 
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use super::Sample;
 
 // generates sinewave
@@ -8,7 +8,7 @@ use super::Sample;
 // f - frequency to generate
 // t - time in seconds
 // ss - stepsize in seconds
-pub fn sinewave(f: f64, p: f64, t: f64, sr: usize) -> Sample {
+pub fn sinewave(f: f32, p: f32, t: f32, sr: usize) -> Sample {
     // precalculate 2πf
     let fc = 2.0 * PI * f;
 
@@ -18,7 +18,7 @@ pub fn sinewave(f: f64, p: f64, t: f64, sr: usize) -> Sample {
     // sine generator
     // f(t) = amplitude
     let mut data = vec![];
-    let dt = 1.0 / sr as f64;
+    let dt = 1.0 / sr as f32;
     let mut t0 = 0.0;
     while t0 < t {
         let i = (fc * t0 + rad).sin();
@@ -30,7 +30,7 @@ pub fn sinewave(f: f64, p: f64, t: f64, sr: usize) -> Sample {
 }
 
 // generates sinewaves from list of (freq,phase) pairs
-pub fn sinewaves(t: f64, sr: usize, frequencies: &[(f64,f64)]) -> Sample {
+pub fn sinewaves(t: f32, sr: usize, frequencies: &[(f32,f32)]) -> Sample {
     // mix and generate samples
     Sample{
         data: frequencies.into_iter()
@@ -52,16 +52,16 @@ pub fn sinewaves(t: f64, sr: usize, frequencies: &[(f64,f64)]) -> Sample {
     }
 }
 
-// parses list of "freq:phase" strings to vector of (f64,f64)
-pub fn parse_freq_phase_pairs(fplist: Vec<String>) -> Vec<(f64,f64)> {
+// parses list of "freq:phase" strings to vector of (f32,f32)
+pub fn parse_freq_phase_pairs(fplist: Vec<String>) -> Vec<(f32,f32)> {
     fplist
     .into_iter()
     .map(|sfp| {
         let components: Vec<&str> = sfp.split(':').collect();
-        let freq = components[0].parse::<f64>().expect("failed to parse freq");
+        let freq = components[0].parse::<f32>().expect("failed to parse freq");
         let mut phase = 0.0;
         if components.len() > 1 {
-            phase = components[1].parse::<f64>().expect("failed to parse phase");
+            phase = components[1].parse::<f32>().expect("failed to parse phase");
         }
         (freq, phase)
     })
@@ -70,7 +70,7 @@ pub fn parse_freq_phase_pairs(fplist: Vec<String>) -> Vec<(f64,f64)> {
 
 // adjusts peaks location + normalizes peaks
 pub fn adjust_peaks(phasors: &[super::Phasor], peaks: &[usize]) -> Vec<usize> {
-    let peaks_amp: Vec<(f64, usize)> = peaks.iter()
+    let peaks_amp: Vec<(f32, usize)> = peaks.iter()
         .map(|&p0| {
             let p0_amp = phasors[p0].complex.to_polar().0;
             let mut p1 = p0 + 1;
@@ -78,12 +78,12 @@ pub fn adjust_peaks(phasors: &[super::Phasor], peaks: &[usize]) -> Vec<usize> {
                 p1 += 1;
             }
             // return floor(center)
-            (p0_amp, p0 + (p1 as f64 - p0 as f64).floor() as usize)
+            (p0_amp, p0 + (p1 as f32 - p0 as f32).floor() as usize)
         })
     .collect();
 
     // get max amplitude
-    let p_max: f64 = peaks_amp.iter().fold(0.0, |acc, p| acc.max(p.0));
+    let p_max: f32 = peaks_amp.iter().fold(0.0, |acc, p| acc.max(p.0));
 
     let mut peaks_normalized: Vec<usize> = peaks_amp.iter()
         .filter(|&p|{ p.0 > p_max * 0.3333333 })

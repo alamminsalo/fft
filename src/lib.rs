@@ -4,19 +4,19 @@ extern crate num_complex;
 
 pub mod util;
 
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use num_complex::Complex;
 
-const I: Complex<f64> = Complex { re: 0.0, im: 1.0 };
+const I: Complex<f32> = Complex { re: 0.0, im: 1.0 };
 
 pub struct Phasor {
-    pub frequency: f64,
-    pub complex: Complex<f64>,
+    pub frequency: f32,
+    pub complex: Complex<f32>,
 }
 
 pub struct Sample {
     // sample data [-1.0-1.0,...]
-    pub data: Vec<f64>,
+    pub data: Vec<f32>,
     // samplerate eg: 44_100
     pub rate: usize
 }
@@ -26,8 +26,8 @@ impl Sample {
         self.data.len() == 0
     }
 
-    pub fn max_amplitude(&self) -> f64 {
-        self.data.iter().fold(0.0, |acc: f64, &xy|{
+    pub fn max_amplitude(&self) -> f32 {
+        self.data.iter().fold(0.0, |acc: f32, &xy|{
             acc.max(xy.abs())
         })
     }
@@ -36,7 +36,7 @@ impl Sample {
         let dt = 1.0 / self.rate as f64;
         self.data.iter()
             .enumerate()
-            .map(|(idx,&a)| (idx as f64 * dt, a))
+            .map(|(idx,&a)| (idx as f64 * dt, a as f64))
             .collect()
     }
 }
@@ -45,16 +45,16 @@ impl Sample {
 // as a function of f(t) = amplitude.
 // Argument f is for winding frequency
 // sf : sampling frequency (eg. 44100hz)
-pub fn graph_circle(sample: &Sample, f: f64) -> Vec<Complex<f64>> {
+pub fn graph_circle(sample: &Sample, f: f32) -> Vec<Complex<f32>> {
     // precalculate 2πf
     let fc = 2.0 * PI * f;
     // cycles per second
-    let sc = 1.0 / sample.rate as f64;
+    let sc = 1.0 / sample.rate as f32;
     // winding machine
     sample.data.iter()
         .enumerate()
         .map(|(i,a)| {
-            let t = sc * i as f64;
+            let t = sc * i as f32;
             let c = (I * fc * t).exp() * a;
             // TODO: why does this have to be negated
             Complex{re: c.im, im: c.re}
@@ -62,18 +62,18 @@ pub fn graph_circle(sample: &Sample, f: f64) -> Vec<Complex<f64>> {
     .collect()
 }
 
-// calculates mean average vector length from array of (f64,64)
-fn calc_mean(data: Vec<Complex<f64>>) -> Complex<f64> {
+// calculates mean average vector length from array of (f32,64)
+fn calc_mean(data: Vec<Complex<f32>>) -> Complex<f32> {
     data.into_iter()
         .enumerate()
         .fold(Complex{re:0.0,im:0.0},
               |acc, (i, c)| {
-                  ((acc * i as f64) + c) / (i + 1) as f64
+                  ((acc * i as f32) + c) / (i + 1) as f32
               })
 }
 
 // Returns sampled FT analysis vector
-pub fn analyze(sample: &Sample, min: f64, max: f64, ss: f64) -> Vec<(f64,Complex<f64>)> {
+pub fn analyze(sample: &Sample, min: f32, max: f32, ss: f32) -> Vec<(f32,Complex<f32>)> {
     println!("FT analysis: {} => {}, step {} hz", min, max, ss);
 
     // calculate data points
@@ -94,7 +94,7 @@ pub fn analyze(sample: &Sample, min: f64, max: f64, ss: f64) -> Vec<(f64,Complex
 
 // Returns FT analysis float value
 // for a frequency value
-pub fn analyze_freq(sample: &Sample, f: f64) -> Complex<f64> {
+pub fn analyze_freq(sample: &Sample, f: f32) -> Complex<f32> {
     calc_mean(graph_circle(sample, f))
 }
 
@@ -114,7 +114,7 @@ pub fn max(data: &[Phasor]) -> usize {
 
 #[cfg(test)]
 mod tests {
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use super::*;
 
 #[test]
@@ -146,7 +146,7 @@ use super::*;
         let polar = calc_mean(circle).to_polar();
         let deg = polar.1 * 180.0 / PI;
         assert!(polar.0 > 0.45);
-        assert!(deg > 89.9 && deg < 90.1);
+        assert_eq!(deg.round(), 90.0);
     }
 
 #[test]
@@ -157,13 +157,13 @@ use super::*;
         let polar = calc_mean(circle).to_polar();
         let deg = polar.1 * 180.0 / PI;
         assert!(polar.0 > 0.45);
-        assert!(deg > 89.9 && deg < 90.1);
+        assert_eq!(deg.round(), 90.0);
 
         let circle = graph_circle(&sine, 60.0);
         let polar = calc_mean(circle).to_polar();
         let deg = polar.1 * 180.0 / PI;
         assert!(polar.0 > 0.45);
-        assert!(deg > -0.1 && deg < 0.1);
+        assert_eq!(deg.round(), 0.0);
 
         let sine = util::sinewaves(1.0, 1000, &[(5.0,180.0),(60.0,270.0)]);
 
@@ -172,13 +172,13 @@ use super::*;
         let deg = polar.1 * 180.0 / PI;
         assert!(polar.0 > 0.45);
         println!("{}", deg);
-        assert!(deg > -180.1 && deg < -179.1);
+        assert_eq!(deg.round(), -180.0);
 
         let circle = graph_circle(&sine, 60.0);
         let polar = calc_mean(circle).to_polar();
         let deg = polar.1 * 180.0 / PI;
         println!("{}", deg);
         assert!(polar.0 > 0.45);
-        assert!(deg > -90.1 && deg < 89.1);
+        assert_eq!(deg.round(),-90.0);
     }
 }

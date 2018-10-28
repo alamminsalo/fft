@@ -24,7 +24,7 @@ fn main() {
     let mut ft_min = 1.0;  // lower bound, hz
     let mut ft_max = 100.0;  // upper bound, hz
     let mut ft_ss = 1.0;    // stepsize, hz
-    let mut ft_res: Option<f64> = None;
+    let mut ft_res: Option<f32> = None;
 
     {
         // parse arguments

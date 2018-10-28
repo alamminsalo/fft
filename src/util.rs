@@ -30,7 +30,7 @@ pub fn sinewave(f: f64, p: f64, t: f64, sr: usize) -> Sample {
 }
 
 // generates sinewaves from list of (freq,phase) pairs
-pub fn generate_sinewaves(t: f64, sr: usize, frequencies: &[(f64,f64)]) -> Sample {
+pub fn sinewaves(t: f64, sr: usize, frequencies: &[(f64,f64)]) -> Sample {
     // mix and generate samples
     Sample{
         data: frequencies.into_iter()

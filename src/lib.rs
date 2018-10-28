@@ -113,9 +113,66 @@ pub fn max(data: &[Phasor]) -> usize {
 }
 
 #[test]
-fn test_circle(){
-    let sine = util::sinewave(5.0, 0.0, 1.0, 1000);
+fn test_circle_single(){
+    let sine = util::sinewaves(1.0, 1000, &[(5.0,0.0)]);
     let circle = graph_circle(&sine, 5.0);
     let center = calc_mean(circle);
-    assert!(center.re > 0.5);
+    assert!(center.re > 0.45);
+}
+
+#[test]
+fn test_circle_multi(){
+    let sine = util::sinewaves(1.0, 1000, &[(5.0,0.0),(10.0,0.0)]);
+
+    let circle = graph_circle(&sine, 5.0);
+    let center = calc_mean(circle);
+    assert!(center.re > 0.45);
+
+    let circle = graph_circle(&sine, 10.0);
+    let center = calc_mean(circle);
+    assert!(center.re > 0.45);
+}
+
+#[test]
+fn test_circle_phase(){
+    let sine = util::sinewaves(1.0, 1000, &[(5.0,90.0)]);
+
+    let circle = graph_circle(&sine, 5.0);
+    let polar = calc_mean(circle).to_polar();
+    let deg = polar.1 * 180.0 / PI;
+    assert!(polar.0 > 0.45);
+    assert!(deg > 89.9 && deg < 90.1);
+}
+
+#[test]
+fn test_circle_phase_multi(){
+    let sine = util::sinewaves(1.0, 1000, &[(5.0,90.0),(60.0,0.0)]);
+
+    let circle = graph_circle(&sine, 5.0);
+    let polar = calc_mean(circle).to_polar();
+    let deg = polar.1 * 180.0 / PI;
+    assert!(polar.0 > 0.45);
+    assert!(deg > 89.9 && deg < 90.1);
+
+    let circle = graph_circle(&sine, 60.0);
+    let polar = calc_mean(circle).to_polar();
+    let deg = polar.1 * 180.0 / PI;
+    assert!(polar.0 > 0.45);
+    assert!(deg > -0.1 && deg < 0.1);
+
+    let sine = util::sinewaves(1.0, 1000, &[(5.0,180.0),(60.0,270.0)]);
+
+    let circle = graph_circle(&sine, 5.0);
+    let polar = calc_mean(circle).to_polar();
+    let deg = polar.1 * 180.0 / PI;
+    assert!(polar.0 > 0.45);
+    println!("{}", deg);
+    assert!(deg > -180.1 && deg < -179.1);
+
+    let circle = graph_circle(&sine, 60.0);
+    let polar = calc_mean(circle).to_polar();
+    let deg = polar.1 * 180.0 / PI;
+    println!("{}", deg);
+    assert!(polar.0 > 0.45);
+    assert!(deg > -90.1 && deg < 89.1);
 }

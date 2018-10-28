@@ -65,7 +65,7 @@ fn main() {
     // create sample
     let mut sample = fft::Sample{ data: vec![], rate: gen_sf };
     if gen_frequencies.len() > 0 {
-        sample = util::generate_sinewaves(gen_t, sample.rate, &util::parse_freq_phase_pairs(gen_frequencies));
+        sample = util::sinewaves(gen_t, sample.rate, &util::parse_freq_phase_pairs(gen_frequencies));
     }
     else {
         // get sample from input

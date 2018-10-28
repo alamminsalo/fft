@@ -25,7 +25,7 @@ impl Sample {
     pub fn is_empty(&self) -> bool {
         self.data.len() == 0
     }
-    
+
     pub fn max_amplitude(&self) -> f64 {
         self.data.iter().fold(0.0, |acc: f64, &xy|{
             acc.max(xy.abs())
@@ -67,9 +67,9 @@ fn calc_mean(data: Vec<Complex<f64>>) -> Complex<f64> {
     data.into_iter()
         .enumerate()
         .fold(Complex{re:0.0,im:0.0},
-           |acc, (i, c)| {
-            ((acc * i as f64) + c) / (i + 1) as f64
-        })
+              |acc, (i, c)| {
+                  ((acc * i as f64) + c) / (i + 1) as f64
+              })
 }
 
 // Returns sampled FT analysis vector
@@ -103,76 +103,82 @@ pub fn max(data: &[Phasor]) -> usize {
     data.iter()
         .enumerate()
         .fold((0,Complex{re: 0.0, im: 0.0}),|acc,(idx,p)| {
-        if acc.1.to_polar().0 > p.complex.to_polar().0 {
-            acc
-        }
-        else {
-            (idx,p.complex)
-        }
-    }).0
+            if acc.1.to_polar().0 > p.complex.to_polar().0 {
+                acc
+            }
+            else {
+                (idx,p.complex)
+            }
+        }).0
 }
 
-#[test]
-fn test_circle_single(){
-    let sine = util::sinewaves(1.0, 1000, &[(5.0,0.0)]);
-    let circle = graph_circle(&sine, 5.0);
-    let center = calc_mean(circle);
-    assert!(center.re > 0.45);
-}
+#[cfg(test)]
+mod tests {
+use std::f64::consts::PI;
+use super::*;
 
 #[test]
-fn test_circle_multi(){
-    let sine = util::sinewaves(1.0, 1000, &[(5.0,0.0),(10.0,0.0)]);
-
-    let circle = graph_circle(&sine, 5.0);
-    let center = calc_mean(circle);
-    assert!(center.re > 0.45);
-
-    let circle = graph_circle(&sine, 10.0);
-    let center = calc_mean(circle);
-    assert!(center.re > 0.45);
-}
+    fn test_circle_single(){
+        let sine = util::sinewaves(1.0, 1000, &[(5.0,0.0)]);
+        let circle = graph_circle(&sine, 5.0);
+        let center = calc_mean(circle);
+        assert!(center.re > 0.45);
+    }
 
 #[test]
-fn test_circle_phase(){
-    let sine = util::sinewaves(1.0, 1000, &[(5.0,90.0)]);
+    fn test_circle_multi(){
+        let sine = util::sinewaves(1.0, 1000, &[(5.0,0.0),(10.0,0.0)]);
 
-    let circle = graph_circle(&sine, 5.0);
-    let polar = calc_mean(circle).to_polar();
-    let deg = polar.1 * 180.0 / PI;
-    assert!(polar.0 > 0.45);
-    assert!(deg > 89.9 && deg < 90.1);
-}
+        let circle = graph_circle(&sine, 5.0);
+        let center = calc_mean(circle);
+        assert!(center.re > 0.45);
+
+        let circle = graph_circle(&sine, 10.0);
+        let center = calc_mean(circle);
+        assert!(center.re > 0.45);
+    }
 
 #[test]
-fn test_circle_phase_multi(){
-    let sine = util::sinewaves(1.0, 1000, &[(5.0,90.0),(60.0,0.0)]);
+    fn test_circle_phase(){
+        let sine = util::sinewaves(1.0, 1000, &[(5.0,90.0)]);
 
-    let circle = graph_circle(&sine, 5.0);
-    let polar = calc_mean(circle).to_polar();
-    let deg = polar.1 * 180.0 / PI;
-    assert!(polar.0 > 0.45);
-    assert!(deg > 89.9 && deg < 90.1);
+        let circle = graph_circle(&sine, 5.0);
+        let polar = calc_mean(circle).to_polar();
+        let deg = polar.1 * 180.0 / PI;
+        assert!(polar.0 > 0.45);
+        assert!(deg > 89.9 && deg < 90.1);
+    }
 
-    let circle = graph_circle(&sine, 60.0);
-    let polar = calc_mean(circle).to_polar();
-    let deg = polar.1 * 180.0 / PI;
-    assert!(polar.0 > 0.45);
-    assert!(deg > -0.1 && deg < 0.1);
+#[test]
+    fn test_circle_phase_multi(){
+        let sine = util::sinewaves(1.0, 1000, &[(5.0,90.0),(60.0,0.0)]);
 
-    let sine = util::sinewaves(1.0, 1000, &[(5.0,180.0),(60.0,270.0)]);
+        let circle = graph_circle(&sine, 5.0);
+        let polar = calc_mean(circle).to_polar();
+        let deg = polar.1 * 180.0 / PI;
+        assert!(polar.0 > 0.45);
+        assert!(deg > 89.9 && deg < 90.1);
 
-    let circle = graph_circle(&sine, 5.0);
-    let polar = calc_mean(circle).to_polar();
-    let deg = polar.1 * 180.0 / PI;
-    assert!(polar.0 > 0.45);
-    println!("{}", deg);
-    assert!(deg > -180.1 && deg < -179.1);
+        let circle = graph_circle(&sine, 60.0);
+        let polar = calc_mean(circle).to_polar();
+        let deg = polar.1 * 180.0 / PI;
+        assert!(polar.0 > 0.45);
+        assert!(deg > -0.1 && deg < 0.1);
 
-    let circle = graph_circle(&sine, 60.0);
-    let polar = calc_mean(circle).to_polar();
-    let deg = polar.1 * 180.0 / PI;
-    println!("{}", deg);
-    assert!(polar.0 > 0.45);
-    assert!(deg > -90.1 && deg < 89.1);
+        let sine = util::sinewaves(1.0, 1000, &[(5.0,180.0),(60.0,270.0)]);
+
+        let circle = graph_circle(&sine, 5.0);
+        let polar = calc_mean(circle).to_polar();
+        let deg = polar.1 * 180.0 / PI;
+        assert!(polar.0 > 0.45);
+        println!("{}", deg);
+        assert!(deg > -180.1 && deg < -179.1);
+
+        let circle = graph_circle(&sine, 60.0);
+        let polar = calc_mean(circle).to_polar();
+        let deg = polar.1 * 180.0 / PI;
+        println!("{}", deg);
+        assert!(polar.0 > 0.45);
+        assert!(deg > -90.1 && deg < 89.1);
+    }
 }

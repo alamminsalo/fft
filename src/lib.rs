@@ -32,12 +32,20 @@ impl Sample {
         })
     }
 
-    pub fn with_time(&self) -> Vec<(f64,f64)> {
+    pub fn with_time(&self, res: usize) -> Vec<(f64,f64)> {
         let dt = 1.0 / self.rate as f64;
+        let ss = (self.data.len() / res).max(1);
         self.data.iter()
             .enumerate()
-            .map(|(idx,&a)| (idx as f64 * dt, a as f64))
+            .step_by(ss)
+            .map(|(i, &a)| {
+                (i as f64 * dt, a as f64)
+            })
             .collect()
+    }
+
+    pub fn time(&self) -> f32 {
+        (self.data.len() as f64 / self.rate as f64) as f32
     }
 }
 

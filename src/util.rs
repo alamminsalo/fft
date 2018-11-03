@@ -8,7 +8,7 @@ use super::Sample;
 // f - frequency to generate
 // t - time in seconds
 // ss - stepsize in seconds
-pub fn sinewave(f: f32, p: f32, t: f32, sr: usize) -> Sample {
+pub fn sinewave(f: f32, p: f32, t: f32, sr: usize, a: f32) -> Sample {
     // precalculate 2πf
     let fc = 2.0 * PI * f;
 
@@ -21,7 +21,7 @@ pub fn sinewave(f: f32, p: f32, t: f32, sr: usize) -> Sample {
     let dt = 1.0 / sr as f32;
     let mut t0 = 0.0;
     while t0 < t {
-        let i = (fc * t0 + rad).sin();
+        let i = (fc * t0 + rad).sin() * a;
         data.push(i);
         t0 += dt;
     }
@@ -38,14 +38,14 @@ pub fn sinewaves(t: f32, sr: usize, frequencies: &[(f32,f32)]) -> Sample {
             println!("{} hz, {} phase", fp.0, fp.1);
             if acc.len() > 0 {
                 acc.into_iter()
-                    .zip(sinewave(fp.0,fp.1,t,sr).data.into_iter())
+                    .zip(sinewave(fp.0,fp.1,t,sr,1.0).data.into_iter())
                     .map(|(t0,t1)|{
                         t0 + t1
                     })
                     .collect()
             }
             else {
-                sinewave(fp.0,fp.1,t,sr).data
+                sinewave(fp.0,fp.1,t,sr,1.0).data
             }
         }),
         rate: sr

@@ -56,7 +56,7 @@ pub fn draw_circle(mut term: &mut DTerm, data: &[Complex<f32>]) {
         .render(&mut term, &Rect::new(0,0,w,h));
 }
 
-pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, min: f32, max: f32) {
+pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, color: Color) {
     // plot scale from min/max values
     let r = sample.max_amplitude().ceil() as f64;
 
@@ -66,24 +66,27 @@ pub fn draw_waveform(mut term: &mut DTerm, sample: &fft::Sample, min: f32, max: 
     let h = size.height / 2;
     let w = size.width - x;
 
+    let min = 0.0;
+    let max = (sample.data.len() as f64 / sample.rate as f64) as f64;
+
     Chart::<&str,&str>::default()
         .block(Block::default()
                .title("Waveform")
                .borders(Borders::ALL))
         .x_axis(Axis::default()
-                .bounds([min.floor() as f64,max.ceil() as f64])
+                .bounds([min,max.ceil() as f64])
                 .labels(&[&min.to_string(), 
-                        &(min + (max - min) / 4.0).to_string(),
-                        &(min + (max - min) / 2.0).to_string(),
-                        &(min + (max - min) / 1.3333333333333333333).to_string(),
-                        &max.to_string()])
+                        &format!("{:.2}", min + (max - min) / 4.0),
+                        &format!("{:.2}", min + (max - min) / 2.0),
+                        &format!("{:.2}", min + (max - min) / 1.3333333333333333333),
+                        &format!("{:.2}", max)])
                 )
         .y_axis(Axis::default()
                 .bounds([-r,r]))
         .datasets(&[Dataset::default()
                   .marker(Marker::Braille)
-                  .style(Style::default().fg(Color::White))
-                  .data(&sample.with_time())])
+                  .style(Style::default().fg(color))
+                  .data(&sample.with_time(100000))])
         .render(&mut term, &Rect::new(x,y,w,h));
 }
 
@@ -144,7 +147,7 @@ impl<'a> Label<'a> {
     }
 }
 
-pub fn draw_peaks(mut term: &mut DTerm, data: Vec<&fft::Phasor>, min: f32, max: f32) {
+pub fn draw_peaks(mut term: &mut DTerm, data: &Vec<&fft::Phasor>, min: f32, max: f32) {
     // plot scale from min/max values
     let r = 1.0;
     let size = &term.size().unwrap();

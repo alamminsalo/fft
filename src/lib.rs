@@ -47,24 +47,48 @@ impl Sample {
     pub fn time(&self) -> f32 {
         (self.data.len() as f64 / self.rate as f64) as f32
     }
+
+    // takes every peak value (where delta values cross)
+    pub fn peaks(&self) -> Vec<usize>{
+        self.data.iter()
+            .enumerate()
+            .skip(1)
+            .step_by(2)
+            .fold((vec![],0.0), |mut acc, (idx,_)| {
+                let d2 = self.data[idx].abs() - self.data[idx-1].abs();
+
+                // track derivate change
+                if acc.1 > 0.0 && d2 < 0.0 ||
+                    acc.1 < 0.0 && d2 > 0.0 {
+                    acc.0.push(idx - 1);
+                }
+
+                (acc.0,d2)
+            }).0
+    }
+
+
+    // extract peaks-only data
+    pub fn simplify(&self) -> Vec<(f32,f32)> {
+        self.peaks().into_iter()
+            .map(|p| ((p as f64 / self.rate as f64) as f32, self.data[p]))
+            .collect()
+    }
 }
 
 // Winds up plot around fixed point(0,0) in unit circle
 // as a function of f(t) = amplitude.
 // Argument f is for winding frequency
+// data: vector of (time, amplitude)
 // sf : sampling frequency (eg. 44100hz)
-pub fn graph_circle(sample: &Sample, f: f32) -> Vec<Complex<f32>> {
+pub fn graph_circle(data: &[(f32,f32)], f: f32) -> Vec<Complex<f32>> {
     // precalculate 2πf
     let fc = 2.0 * PI * f;
-    // cycles per second
-    let sc = 1.0 / sample.rate as f32;
     // winding machine
-    sample.data.iter()
-        .enumerate()
-        .map(|(i,a)| {
-            let t = sc * i as f32;
+    data.iter()
+        .map(|&(t,a)| {
             let c = (I * fc * t).exp() * a;
-            // TODO: why does this have to be negated
+            // TODO: why does this have to be inverse
             Complex{re: c.im, im: c.re}
         })
     .collect()
@@ -87,9 +111,12 @@ pub fn analyze(sample: &Sample, min: f32, max: f32, ss: f32) -> Vec<(f32,Complex
     // calculate data points
     let mut ft_data = vec![];
     let mut f = min;
+
+    let data = sample.simplify();
+
     while f <= max {
         // calculate revolutions around unit circle
-        let processed = graph_circle(sample, f);
+        let processed = graph_circle(&data, f);
         // calculate mean from y-axis values
         let mx = calc_mean(processed);
         ft_data.push((f, mx));
@@ -102,8 +129,8 @@ pub fn analyze(sample: &Sample, min: f32, max: f32, ss: f32) -> Vec<(f32,Complex
 
 // Returns FT analysis float value
 // for a frequency value
-pub fn analyze_freq(sample: &Sample, f: f32) -> Complex<f32> {
-    calc_mean(graph_circle(sample, f))
+pub fn analyze_freq(data: &[(f32,f32)], f: f32) -> Complex<f32> {
+    calc_mean(graph_circle(data, f))
 }
 
 // finds a local max inside
